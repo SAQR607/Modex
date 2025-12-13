@@ -33,7 +33,11 @@ const seedAdmin = async () => {
       console.error('  2. Database credentials in .env are correct');
       console.error('  3. Database "modex_platform" exists (create it manually)');
     }
-    throw error;
+    // Don't throw - let app.js handle the error gracefully
+    // Only throw if called directly (for CLI usage)
+    if (require.main === module) {
+      throw error;
+    }
   }
 };
 

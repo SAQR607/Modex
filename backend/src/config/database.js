@@ -1,23 +1,22 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
 
-// Validate required environment variables
-const requiredEnvVars = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST'];
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingVars.length > 0) {
-  console.error('ERROR: Missing required database environment variables:', missingVars.join(', '));
-  console.error('Please check your .env file and ensure all database credentials are set.');
-  process.exit(1);
+// Load .env safely (optional)
+try {
+  require('dotenv').config();
+} catch (error) {
+  // .env is optional
 }
 
+// Create sequelize instance with safe defaults
+// Server will start even if database credentials are missing
+// All values come from environment variables or safe defaults
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
+  process.env.DB_NAME || 'modex_platform',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASSWORD || '',
   {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 3306,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 3306,
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
@@ -25,6 +24,14 @@ const sequelize = new Sequelize(
       min: 0,
       acquire: 30000,
       idle: 10000
+    },
+    // Don't fail on connection errors - let app.js handle them
+    retry: {
+      max: 0
+    },
+    // Prevent connection errors from crashing the app
+    dialectOptions: {
+      connectTimeout: 10000
     }
   }
 );

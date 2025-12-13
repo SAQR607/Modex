@@ -5,8 +5,11 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "seed": "node src/seeders/adminSeeder.js"
+    "dev": "nodemon src/app.js"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "keywords": ["modex", "competition", "platform"],
   "author": "",

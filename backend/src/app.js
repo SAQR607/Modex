@@ -3,7 +3,27 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+
+// Load environment variables (optional - won't crash if .env doesn't exist)
+try {
+  require('dotenv').config();
+} catch (error) {
+  // .env file is optional - continue without it
+  console.log('Note: .env file not found. Using environment variables or defaults.');
+}
+
+// Process-level error handlers for deployment safety
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+  // Don't exit - allow server to continue running
+  // In production, you might want to log to external service
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit - allow server to continue running
+});
 
 const sequelize = require('./config/database');
 const seedAdmin = require('./seeders/adminSeeder');
@@ -64,19 +84,30 @@ setupWebRTC(io);
 
 // Database sync and admin seeder
 const startServer = async () => {
-  const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT || 3000;
   
   // Start server even if database is not available (for deployment scenario)
   server.listen(PORT, () => {
     console.log('='.repeat(50));
-    console.log(`✓ Server running on port ${PORT}`);
-    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`✓ API available at http://localhost:${PORT}/api`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`API available at http://localhost:${PORT}/api`);
     console.log('='.repeat(50));
   });
 
   // Attempt database connection (non-blocking)
+  // This will not crash the server if database is unavailable
   const initializeDatabase = async () => {
+    // Check if database credentials are provided
+    const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_HOST;
+    
+    if (!hasDbConfig) {
+      console.log('\n⚠️  Database configuration not found. Server running without database.');
+      console.log('   Set DB_NAME, DB_USER, DB_PASSWORD, and DB_HOST in .env to enable database features.');
+      console.log('   Server will continue running. Configure database and restart to enable full functionality.\n');
+      return;
+    }
+
     try {
       console.log('\nAttempting to connect to database...');
       await sequelize.authenticate();
@@ -122,4 +153,3 @@ const startServer = async () => {
 startServer();
 
 module.exports = { app, server, io };
-
