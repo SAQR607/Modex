@@ -86,3 +86,4 @@ API available at http://localhost:3000/api
 
 **Hostinger-ready: YES** ✅
 
+

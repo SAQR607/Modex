@@ -1,12 +1,18 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-const path = require('path');
+import express from 'express';
+import http from 'http';
+import socketIo from 'socket.io';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load environment variables (optional - won't crash if .env doesn't exist)
 try {
-  require('dotenv').config();
+  const dotenv = await import('dotenv');
+  dotenv.default.config();
 } catch (error) {
   // .env file is optional - continue without it
   console.log('Note: .env file not found. Using environment variables or defaults.');
@@ -25,20 +31,20 @@ process.on('unhandledRejection', (reason, promise) => {
   // Don't exit - allow server to continue running
 });
 
-const sequelize = require('./config/database');
-const seedAdmin = require('./seeders/adminSeeder');
-const setupChatSocket = require('./sockets/chatSocket');
-const setupWebRTC = require('./webrtc/webrtcHandler');
+const sequelize = (await import('./config/database.js')).default;
+const seedAdmin = (await import('./seeders/adminSeeder.js')).default;
+const setupChatSocket = (await import('./sockets/chatSocket.js')).default;
+const setupWebRTC = (await import('./webrtc/webrtcHandler.js')).default;
 
 // Import routes
-const authRoutes = require('./routes/authRoutes');
-const competitionRoutes = require('./routes/competitionRoutes');
-const qualificationRoutes = require('./routes/qualificationRoutes');
-const teamRoutes = require('./routes/teamRoutes');
-const stageRoutes = require('./routes/stageRoutes');
-const submissionRoutes = require('./routes/submissionRoutes');
-const judgeRoutes = require('./routes/judgeRoutes');
-const announcementRoutes = require('./routes/announcementRoutes');
+const authRoutes = (await import('./routes/authRoutes.js')).default;
+const competitionRoutes = (await import('./routes/competitionRoutes.js')).default;
+const qualificationRoutes = (await import('./routes/qualificationRoutes.js')).default;
+const teamRoutes = (await import('./routes/teamRoutes.js')).default;
+const stageRoutes = (await import('./routes/stageRoutes.js')).default;
+const submissionRoutes = (await import('./routes/submissionRoutes.js')).default;
+const judgeRoutes = (await import('./routes/judgeRoutes.js')).default;
+const announcementRoutes = (await import('./routes/announcementRoutes.js')).default;
 
 const app = express();
 const server = http.createServer(app);
@@ -63,6 +69,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Serve static files from public folder
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/competitions', competitionRoutes);
@@ -76,6 +85,11 @@ app.use('/api/announcements', announcementRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Modex Platform API is running' });
+});
+
+// Catch-all handler: send back React's index.html file for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Socket.io setup
@@ -152,4 +166,4 @@ const startServer = async () => {
 
 startServer();
 
-module.exports = { app, server, io };
+export { app, server, io };
