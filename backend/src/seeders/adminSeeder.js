@@ -3,9 +3,13 @@ const sequelize = require('../config/database');
 
 const seedAdmin = async () => {
   try {
-    const adminEmail = 'admin@financialmodex.com';
-    const adminPassword = 'Admin@123';
+    // Use environment variables if available, otherwise use defaults
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@financialmodex.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+    const adminFirstName = process.env.ADMIN_FIRST_NAME || 'Admin';
+    const adminLastName = process.env.ADMIN_LAST_NAME || 'User';
 
+    // Check if admin already exists
     const existingAdmin = await User.findOne({ where: { email: adminEmail } });
 
     if (existingAdmin) {
@@ -13,25 +17,26 @@ const seedAdmin = async () => {
       return;
     }
 
+    // Create admin user with first_name and last_name matching database schema
     const admin = await User.create({
       email: adminEmail,
-      password: adminPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'admin',
-      isQualified: true
+      password: adminPassword, // Will be hashed by model hook
+      first_name: adminFirstName,
+      last_name: adminLastName,
+      role: 'admin'
     });
 
     console.log('✓ Admin user created successfully:', admin.email);
     console.log('  Email:', adminEmail);
     console.log('  Password:', adminPassword);
+    console.log('  Name:', `${adminFirstName} ${adminLastName}`);
   } catch (error) {
     console.error('✗ Error seeding admin:', error.message);
     if (error.name === 'SequelizeConnectionError') {
       console.error('  Database connection failed. Please ensure:');
       console.error('  1. MySQL server is running');
       console.error('  2. Database credentials in .env are correct');
-      console.error('  3. Database "modex_platform" exists (create it manually)');
+      console.error('  3. Database exists (create it manually if needed)');
     }
     // Don't throw - let app.js handle the error gracefully
     // Only throw if called directly (for CLI usage)

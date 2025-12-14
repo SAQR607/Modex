@@ -46,18 +46,16 @@ const register = async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Combine firstName and lastName into fullName for model
-    const fullName = `${firstName} ${lastName}`.trim();
-
-    // Determine role - allow admin if provided, otherwise default to 'member'
-    const userRole = role && ['admin', 'judge', 'leader', 'member'].includes(role) ? role : 'member';
+    // Determine role - allow admin if provided, otherwise default to 'user'
+    const userRole = role && ['admin', 'user'].includes(role) ? role : 'user';
     console.log('🔍 REGISTER: Creating user with role:', userRole);
 
     console.log('🔍 REGISTER: Creating user in database...');
     const user = await User.create({
       email,
       password, // Will be hashed by model hook using bcrypt
-      fullName,
+      first_name: firstName,
+      last_name: lastName,
       role: userRole
     });
     console.log('✅ REGISTER: User created successfully:', { id: user.id, email: user.email, role: user.role });
@@ -94,7 +92,8 @@ const register = async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.fullName,
+        firstName: user.first_name,
+        lastName: user.last_name,
         role: user.role
       }
     });
@@ -134,9 +133,9 @@ const login = async (req, res) => {
         user: {
           id: 0,
           email: 'admin@modex.local',
-          fullName: 'Temporary Admin',
-          role: 'admin',
-          isQualified: true
+          firstName: 'Temporary',
+          lastName: 'Admin',
+          role: 'admin'
         }
       });
     }
@@ -154,7 +153,6 @@ const login = async (req, res) => {
       id: user.id,
       email: user.email,
       role: user.role,
-      isQualified: user.isQualified,
       hasPasswordHash: !!user.password
     });
 
@@ -174,7 +172,7 @@ const login = async (req, res) => {
     if (isAdmin) {
       console.log('✅ LOGIN: Admin user detected - bypassing all qualification checks');
     } else {
-      console.log('ℹ️ LOGIN: Regular user - role:', user.role, 'isQualified:', user.isQualified);
+      console.log('ℹ️ LOGIN: Regular user - role:', user.role);
     }
 
     // Get JWT secret with safe default
@@ -197,9 +195,9 @@ const login = async (req, res) => {
     const userResponse = {
       id: user.id,
       email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      isQualified: user.isQualified || isAdmin // Admin is always considered qualified
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role
     };
 
     // Only include teamId if user has one
@@ -241,9 +239,9 @@ const getProfile = async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.fullName,
+        firstName: user.first_name,
+        lastName: user.last_name,
         role: user.role,
-        isQualified: user.isQualified || user.role === 'admin',
         teamId: user.teamId || null
       }
     });

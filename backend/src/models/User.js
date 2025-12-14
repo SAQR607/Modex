@@ -4,16 +4,22 @@ const bcrypt = require('bcrypt');
 
 const User = sequelize.define('User', {
   id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.INTEGER.UNSIGNED,
     primaryKey: true,
     autoIncrement: true
   },
-  fullName: {
-    type: DataTypes.STRING,
-    allowNull: false
+  first_name: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'first_name'
+  },
+  last_name: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    field: 'last_name'
   },
   email: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
     unique: true,
     validate: {
@@ -21,21 +27,19 @@ const User = sequelize.define('User', {
     }
   },
   password: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('admin', 'judge', 'leader', 'member'),
+    type: DataTypes.ENUM('user', 'admin'),
     allowNull: false,
-    defaultValue: 'member'
-  },
-  isQualified: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
+    defaultValue: 'user'
   }
 }, {
-  tableName: 'Users',
+  tableName: 'users',
   timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {

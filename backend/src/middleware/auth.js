@@ -55,5 +55,29 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authenticate, authorize };
+// Alias functions for clearer naming convention
+// protect() - verifies JWT token and attaches user to req.user
+const protect = authenticate;
+
+// restrictTo(...roles) - checks if authenticated user's role is in allowed roles
+const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    next();
+  };
+};
+
+module.exports = { 
+  authenticate,  // Keep for backward compatibility
+  authorize,    // Keep for backward compatibility
+  protect,      // New alias for authenticate
+  restrictTo    // New alias for authorize with clearer naming
+};
 
