@@ -10,6 +10,8 @@ const Judge = require('./Judge');
 const Score = require('./Score');
 const UploadedFile = require('./UploadedFile');
 
+console.log('🔥 MODELS INDEX: Loading all models...');
+
 // User relationships
 User.hasMany(Team, { foreignKey: 'leaderId', onDelete: 'SET NULL' });
 Team.belongsTo(User, { foreignKey: 'leaderId' });
@@ -54,6 +56,8 @@ QualificationAnswer.belongsTo(QualificationQuestion, { foreignKey: 'questionId' 
 // Judge relationships
 Judge.hasMany(Score, { foreignKey: 'judgeId', onDelete: 'CASCADE' });
 Score.belongsTo(Judge, { foreignKey: 'judgeId' });
+
+console.log('🔥 MODELS INDEX: All relationships defined');
 
 module.exports = {
   sequelize,
