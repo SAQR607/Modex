@@ -6,6 +6,7 @@ console.log('ENV CHECK:', {
   NODE_ENV: process.env.NODE_ENV || 'not set',
   DB_NAME: !!process.env.DB_NAME,
   DB_USER: !!process.env.DB_USER,
+  DB_SOCKET: !!process.env.DB_SOCKET,
   DB_HOST: !!process.env.DB_HOST,
   JWT_SECRET: !!process.env.JWT_SECRET,
   PORT: process.env.PORT || 'not set (will use 3000)'
@@ -104,12 +105,14 @@ app.get('/health', (req, res) => {
 // API health check with database status
 app.get('/api/health', async (req, res) => {
   let dbStatus = 'disconnected';
-  const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_HOST;
+  const hasSocket = !!process.env.DB_SOCKET;
+  const hasHost = !!process.env.DB_HOST;
+  const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && (hasSocket || hasHost);
   
   if (hasDbConfig) {
     try {
       await sequelize.authenticate();
-      dbStatus = 'connected';
+      dbStatus = hasSocket ? 'connected via socket' : 'connected via TCP';
     } catch (err) {
       dbStatus = 'disconnected';
     }
@@ -122,6 +125,7 @@ app.get('/api/health', async (req, res) => {
       JWT_SECRET: !!process.env.JWT_SECRET,
       DB_NAME: !!process.env.DB_NAME,
       DB_USER: !!process.env.DB_USER,
+      DB_SOCKET: !!process.env.DB_SOCKET,
       DB_HOST: !!process.env.DB_HOST
     }
   });
@@ -217,11 +221,16 @@ const startServer = async () => {
   const PORT = process.env.PORT || 3000;
   
   // Attempt database connection (non-blocking) - NO SYNC, tables already exist
-  const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_HOST;
+  const hasSocket = !!process.env.DB_SOCKET;
+  const hasHost = !!process.env.DB_HOST;
+  const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && (hasSocket || hasHost);
   
   if (hasDbConfig) {
     console.log('🔍 Attempting database connection...');
+    const connectionType = hasSocket ? 'socket' : 'TCP';
+    console.log(`Database connection type: ${connectionType}`);
     console.log('Database config check:', {
+      DB_SOCKET: !!process.env.DB_SOCKET,
       DB_HOST: !!process.env.DB_HOST,
       DB_NAME: !!process.env.DB_NAME,
       DB_USER: !!process.env.DB_USER,
@@ -230,21 +239,27 @@ const startServer = async () => {
     
     try {
       await sequelize.authenticate();
-      console.log('✅ Database connected successfully');
+      if (hasSocket) {
+        console.log('✅ Database connected via socket');
+      } else {
+        console.log('✅ Database connected via TCP');
+      }
     } catch (err) {
       console.error('❌ Database connection failed:', err.message);
       console.error('Database config status:', {
+        DB_SOCKET: !!process.env.DB_SOCKET,
         DB_HOST: !!process.env.DB_HOST,
         DB_NAME: !!process.env.DB_NAME,
         DB_USER: !!process.env.DB_USER,
         hasPassword: !!process.env.DB_PASSWORD
       });
-      console.warn('⚠️ Database connection failed, running in degraded mode');
+      console.warn('⚠️ Database disconnected - running in degraded mode');
       // Do NOT exit - server continues without database
     }
   } else {
     console.warn('⚠️ Database credentials loaded from environment at runtime.');
     console.log('Database config status:', {
+      DB_SOCKET: !!process.env.DB_SOCKET,
       DB_HOST: !!process.env.DB_HOST,
       DB_NAME: !!process.env.DB_NAME,
       DB_USER: !!process.env.DB_USER,
