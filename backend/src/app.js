@@ -4,30 +4,10 @@ const path = require('path');
 
 console.log('🔥 ENTRY FILE EXECUTED: backend/src/app.js');
 
-// Load environment variables - REQUIRED
+// Load environment variables
 require('dotenv').config();
 
-// ENV VERIFICATION - FAIL HARD IF MISSING
-console.log('🔥 VERIFYING ENVIRONMENT VARIABLES...');
-const requiredEnvVars = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST'];
-const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
-
-if (missingEnvVars.length > 0) {
-  console.error('❌ FATAL: Missing required environment variables:', missingEnvVars.join(', '));
-  console.error('❌ Server cannot start without database configuration.');
-  process.exit(1);
-}
-
-console.log('✅ ENV VARS CHECK:');
-console.log('   DB_HOST:', process.env.DB_HOST);
-console.log('   DB_NAME:', process.env.DB_NAME);
-console.log('   DB_USER:', process.env.DB_USER);
-console.log('   DB_PASSWORD:', process.env.DB_PASSWORD ? '***SET***' : 'MISSING');
-
-// Remove error handlers that prevent crashes - we WANT to fail hard
-process.removeAllListeners('uncaughtException');
-process.removeAllListeners('unhandledRejection');
-
+// Process-level error handlers
 process.on('uncaughtException', (error) => {
   console.error('❌ FATAL UNCAUGHT EXCEPTION:', error);
   console.error('Stack:', error.stack);
@@ -42,7 +22,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 console.log('🔥 SEQUELIZE INIT START');
 
-// Import DB and models FIRST - ensure models loaded and relationships defined
+// Import DB and models - database is optional
 const sequelize = require('./config/database');
 const models = require('./models/index'); // This loads all models and defines relationships
 
@@ -201,40 +181,49 @@ try {
   io = null;
 }
 
-// Start server with MANDATORY database sync
+// Start server - database is optional and non-blocking
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
   
-  try {
-    console.log('🔥 DB AUTH START');
-    await sequelize.authenticate();
-    console.log('🔥 DB AUTH OK');
+  // Attempt database connection (non-blocking)
+  const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_HOST;
+  
+  if (hasDbConfig) {
+    try {
+      console.log('🔥 DB AUTH START');
+      await sequelize.authenticate();
+      console.log('🔥 DB AUTH OK');
 
-    console.log('🔥 DB SYNC START - Running sequelize.sync({ alter: true })');
-    await sequelize.sync({ force: false, alter: true });
-    console.log('🔥 DB SYNC DONE - TABLES SHOULD EXIST');
-    
-    // Verify tables exist by querying
-    const [results] = await sequelize.query("SHOW TABLES");
-    console.log('🔥 VERIFICATION: Found', results.length, 'tables in database');
-    results.forEach(row => {
-      const tableName = Object.values(row)[0];
-      console.log('   - Table:', tableName);
-    });
-    
-  } catch (err) {
-    console.error('❌ FATAL SEQUELIZE ERROR:', err.message);
-    console.error('❌ Full error stack:');
-    console.error(err.stack);
-    console.error('❌ Server cannot start without database. Exiting...');
-    process.exit(1);
+      console.log('🔥 DB SYNC START - Running sequelize.sync({ alter: true })');
+      await sequelize.sync({ force: false, alter: true });
+      console.log('🔥 DB SYNC DONE - TABLES SHOULD EXIST');
+      
+      // Verify tables exist by querying
+      try {
+        const [results] = await sequelize.query("SHOW TABLES");
+        console.log('🔥 VERIFICATION: Found', results.length, 'tables in database');
+        results.forEach(row => {
+          const tableName = Object.values(row)[0];
+          console.log('   - Table:', tableName);
+        });
+      } catch (queryError) {
+        console.warn('Could not verify tables:', queryError.message);
+      }
+    } catch (err) {
+      console.error('⚠ Database connection failed:', err.message);
+      console.error('Server will continue without database functionality.');
+      // Do NOT exit - server continues without database
+    }
+  } else {
+    console.log('⚠ Database disabled – missing environment variables');
+    console.log('Server running without database functionality.');
   }
 
-  // Start server
+  // Start server - ALWAYS succeeds regardless of database status
   try {
     server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log('✅ ALL STARTUP CHECKS PASSED');
+      console.log(`Server running on port ${PORT}`);
+      console.log('✅ Server started successfully');
     });
   } catch (error) {
     console.error('❌ FATAL: Server failed to start:', error.message);
