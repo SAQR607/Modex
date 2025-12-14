@@ -167,6 +167,9 @@ try {
   io = null;
 }
 
+// Import models to ensure they are registered
+const models = require('./models');
+
 // Database initialization - completely optional, non-blocking
 const initializeDatabase = async () => {
   // Check if database credentials are provided
@@ -178,19 +181,24 @@ const initializeDatabase = async () => {
   }
 
   try {
-    const sequelize = require('./config/database');
+    const { sequelize } = models;
     await sequelize.authenticate();
     console.log('Database: connected');
     
     try {
-      await sequelize.sync({ alter: false });
+      console.log('Synchronizing database schema...');
+      await sequelize.sync({ alter: true });
+      console.log('✓ Database tables created/updated successfully');
+      
       const seedAdmin = require('./seeders/adminSeeder');
       await seedAdmin();
     } catch (error) {
-      console.warn('Database sync/seeding failed:', error.message);
+      console.error('Database sync/seeding failed:', error.message);
+      console.error('Stack:', error.stack);
     }
   } catch (error) {
     console.log('Database: skipped (connection failed)');
+    console.error('Error:', error.message);
   }
 };
 

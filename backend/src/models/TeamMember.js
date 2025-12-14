@@ -1,11 +1,19 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const QualificationAnswer = sequelize.define('QualificationAnswer', {
+const TeamMember = sequelize.define('TeamMember', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
+  },
+  teamId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Teams',
+      key: 'id'
+    }
   },
   userId: {
     type: DataTypes.INTEGER,
@@ -15,21 +23,15 @@ const QualificationAnswer = sequelize.define('QualificationAnswer', {
       key: 'id'
     }
   },
-  questionId: {
-    type: DataTypes.INTEGER,
+  role: {
+    type: DataTypes.ENUM('leader', 'member'),
     allowNull: false,
-    references: {
-      model: 'QualificationQuestions',
-      key: 'id'
-    }
-  },
-  answer: {
-    type: DataTypes.TEXT,
-    allowNull: true
+    defaultValue: 'member'
   }
 }, {
-  tableName: 'QualificationAnswers',
-  timestamps: true
+  tableName: 'TeamMembers',
+  timestamps: false
 });
 
-module.exports = QualificationAnswer;
+module.exports = TeamMember;
+

@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Score = sequelize.define('Score', {
+const UploadedFile = sequelize.define('UploadedFile', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -15,14 +15,6 @@ const Score = sequelize.define('Score', {
       key: 'id'
     }
   },
-  judgeId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'Judges',
-      key: 'id'
-    }
-  },
   stageId: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -31,17 +23,23 @@ const Score = sequelize.define('Score', {
       key: 'id'
     }
   },
-  score: {
-    type: DataTypes.DECIMAL(10, 2),
+  filePath: {
+    type: DataTypes.STRING,
     allowNull: false
   },
-  notes: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  originalName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  uploadedAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'Scores',
-  timestamps: true
+  tableName: 'UploadedFiles',
+  timestamps: false
 });
 
-module.exports = Score;
+module.exports = UploadedFile;
+

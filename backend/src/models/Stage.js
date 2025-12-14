@@ -15,37 +15,18 @@ const Stage = sequelize.define('Stage', {
       key: 'id'
     }
   },
-  name: {
+  title: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
   order: {
     type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  type: {
+    type: DataTypes.ENUM('qualification', 'submission', 'evaluation'),
     allowNull: false
-  },
-  scoringType: {
-    type: DataTypes.ENUM('automatic', 'manual'),
-    defaultValue: 'automatic'
-  },
-  instructions: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  startDate: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  endDate: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  isActive: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
   }
 }, {
   tableName: 'Stages',
@@ -53,4 +34,3 @@ const Stage = sequelize.define('Stage', {
 });
 
 module.exports = Stage;
-

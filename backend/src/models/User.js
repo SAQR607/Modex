@@ -8,6 +8,10 @@ const User = sequelize.define('User', {
     primaryKey: true,
     autoIncrement: true
   },
+  fullName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -20,14 +24,6 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  firstName: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  lastName: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   role: {
     type: DataTypes.ENUM('admin', 'judge', 'leader', 'member'),
     allowNull: false,
@@ -36,22 +32,6 @@ const User = sequelize.define('User', {
   isQualified: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
-  },
-  qualifiedAt: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  teamId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'Teams',
-      key: 'id'
-    }
-  },
-  teamRole: {
-    type: DataTypes.STRING,
-    allowNull: true
   }
 }, {
   tableName: 'Users',
@@ -75,4 +55,3 @@ User.prototype.comparePassword = async function(password) {
 };
 
 module.exports = User;
-

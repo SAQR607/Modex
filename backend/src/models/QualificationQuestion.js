@@ -20,20 +20,12 @@ const QualificationQuestion = sequelize.define('QualificationQuestion', {
     allowNull: false
   },
   type: {
-    type: DataTypes.ENUM('text', 'multiple_choice', 'file_upload'),
+    type: DataTypes.ENUM('text', 'multiple_choice'),
     allowNull: false
   },
   options: {
     type: DataTypes.JSON,
     allowNull: true
-  },
-  order: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  isRequired: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
   }
 }, {
   tableName: 'QualificationQuestions',
@@ -41,4 +33,3 @@ const QualificationQuestion = sequelize.define('QualificationQuestion', {
 });
 
 module.exports = QualificationQuestion;
-

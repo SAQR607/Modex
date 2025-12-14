@@ -7,7 +7,7 @@ const Competition = sequelize.define('Competition', {
     primaryKey: true,
     autoIncrement: true
   },
-  name: {
+  title: {
     type: DataTypes.STRING,
     allowNull: false
   },
@@ -15,21 +15,13 @@ const Competition = sequelize.define('Competition', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  bannerImage: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
   status: {
-    type: DataTypes.ENUM('draft', 'active', 'finished'),
+    type: DataTypes.ENUM('draft', 'active', 'completed'),
     defaultValue: 'draft'
   },
-  maxQualifiedUsers: {
+  maxTeams: {
     type: DataTypes.INTEGER,
-    defaultValue: 100
-  },
-  currentQualifiedCount: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
+    allowNull: true
   }
 }, {
   tableName: 'Competitions',
@@ -37,4 +29,3 @@ const Competition = sequelize.define('Competition', {
 });
 
 module.exports = Competition;
-

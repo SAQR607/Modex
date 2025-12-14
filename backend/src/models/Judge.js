@@ -14,14 +14,6 @@ const Judge = sequelize.define('Judge', {
       model: 'Users',
       key: 'id'
     }
-  },
-  competitionId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'Competitions',
-      key: 'id'
-    }
   }
 }, {
   tableName: 'Judges',
@@ -29,4 +21,3 @@ const Judge = sequelize.define('Judge', {
 });
 
 module.exports = Judge;
-

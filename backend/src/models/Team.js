@@ -11,19 +11,6 @@ const Team = sequelize.define('Team', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  inviteCode: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  competitionId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'Competitions',
-      key: 'id'
-    }
-  },
   leaderId: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -32,17 +19,10 @@ const Team = sequelize.define('Team', {
       key: 'id'
     }
   },
-  isComplete: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
-  isDisqualified: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
-  maxMembers: {
-    type: DataTypes.INTEGER,
-    defaultValue: 5
+  inviteCode: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
   }
 }, {
   tableName: 'Teams',
@@ -50,4 +30,3 @@ const Team = sequelize.define('Team', {
 });
 
 module.exports = Team;
-
