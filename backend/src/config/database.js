@@ -23,18 +23,34 @@ if (!hasDbConfig) {
   };
 } else {
   // Create real sequelize instance
-  sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASSWORD,
-    {
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
-      dialect: process.env.DB_DIALECT || 'mysql',
-      logging: process.env.NODE_ENV === 'development' ? (msg) => console.log('[sequelize] ' + msg) : false,
-      pool: { max: 10, min: 0, acquire: 30000, idle: 10000 }
-    }
-  );
+  try {
+    sequelize = new Sequelize(
+      process.env.DB_NAME,
+      process.env.DB_USER,
+      process.env.DB_PASSWORD,
+      {
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+        dialect: process.env.DB_DIALECT || 'mysql',
+        logging: process.env.NODE_ENV === 'development' ? (msg) => console.log('[sequelize] ' + msg) : false,
+        pool: { max: 10, min: 0, acquire: 30000, idle: 10000 }
+      }
+    );
+  } catch (error) {
+    console.error('⚠ Database configuration error:', error.message);
+    // Create dummy instance on error
+    sequelize = {
+      authenticate: async () => {
+        throw new Error('Database configuration error');
+      },
+      sync: async () => {
+        throw new Error('Database configuration error');
+      },
+      query: async () => {
+        throw new Error('Database configuration error');
+      }
+    };
+  }
 }
 
 module.exports = sequelize;

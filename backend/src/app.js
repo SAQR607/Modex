@@ -1,11 +1,21 @@
+// Load environment variables FIRST - before anything else
+require('dotenv').config({ path: process.env.NODE_ENV === 'production' ? '.env' : '.env' });
+
+// ENV CHECK - Log environment variable status
+console.log('ENV CHECK:', {
+  NODE_ENV: process.env.NODE_ENV || 'not set',
+  DB_NAME: !!process.env.DB_NAME,
+  DB_USER: !!process.env.DB_USER,
+  DB_HOST: !!process.env.DB_HOST,
+  JWT_SECRET: !!process.env.JWT_SECRET,
+  PORT: process.env.PORT || 'not set (will use 3000)'
+});
+
 const express = require('express');
 const http = require('http');
 const path = require('path');
 
 console.log('🔥 ENTRY FILE EXECUTED: backend/src/app.js');
-
-// Load environment variables
-require('dotenv').config();
 
 // Process-level error handlers
 process.on('uncaughtException', (error) => {
@@ -83,62 +93,40 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Modex Platform API is running' });
 });
 
-// Load routes
-try {
-  const authRoutes = require('./routes/authRoutes');
-  app.use('/api/auth', authRoutes);
-} catch (error) {
-  console.warn('Auth routes failed to load:', error.message);
-}
+// Load routes - FORCE registration without try-catch to see errors
+console.log('Loading routes...');
 
-try {
-  const competitionRoutes = require('./routes/competitionRoutes');
-  app.use('/api/competitions', competitionRoutes);
-} catch (error) {
-  console.warn('Competition routes failed to load:', error.message);
-}
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+console.log('✅ Auth routes registered at /api/auth');
 
-try {
-  const qualificationRoutes = require('./routes/qualificationRoutes');
-  app.use('/api/qualifications', qualificationRoutes);
-} catch (error) {
-  console.warn('Qualification routes failed to load:', error.message);
-}
+const competitionRoutes = require('./routes/competitionRoutes');
+app.use('/api/competitions', competitionRoutes);
+console.log('✅ Competition routes registered');
 
-try {
-  const teamRoutes = require('./routes/teamRoutes');
-  app.use('/api/teams', teamRoutes);
-} catch (error) {
-  console.warn('Team routes failed to load:', error.message);
-}
+const qualificationRoutes = require('./routes/qualificationRoutes');
+app.use('/api/qualifications', qualificationRoutes);
+console.log('✅ Qualification routes registered');
 
-try {
-  const stageRoutes = require('./routes/stageRoutes');
-  app.use('/api/stages', stageRoutes);
-} catch (error) {
-  console.warn('Stage routes failed to load:', error.message);
-}
+const teamRoutes = require('./routes/teamRoutes');
+app.use('/api/teams', teamRoutes);
+console.log('✅ Team routes registered');
 
-try {
-  const submissionRoutes = require('./routes/submissionRoutes');
-  app.use('/api/submissions', submissionRoutes);
-} catch (error) {
-  console.warn('Submission routes failed to load:', error.message);
-}
+const stageRoutes = require('./routes/stageRoutes');
+app.use('/api/stages', stageRoutes);
+console.log('✅ Stage routes registered');
 
-try {
-  const judgeRoutes = require('./routes/judgeRoutes');
-  app.use('/api/judges', judgeRoutes);
-} catch (error) {
-  console.warn('Judge routes failed to load:', error.message);
-}
+const submissionRoutes = require('./routes/submissionRoutes');
+app.use('/api/submissions', submissionRoutes);
+console.log('✅ Submission routes registered');
 
-try {
-  const announcementRoutes = require('./routes/announcementRoutes');
-  app.use('/api/announcements', announcementRoutes);
-} catch (error) {
-  console.warn('Announcement routes failed to load:', error.message);
-}
+const judgeRoutes = require('./routes/judgeRoutes');
+app.use('/api/judges', judgeRoutes);
+console.log('✅ Judge routes registered');
+
+const announcementRoutes = require('./routes/announcementRoutes');
+app.use('/api/announcements', announcementRoutes);
+console.log('✅ Announcement routes registered');
 
 // Catch-all handler
 try {
@@ -150,6 +138,15 @@ try {
     res.status(404).json({ error: 'Not found' });
   });
 }
+
+// Global error handling middleware - MUST be after all routes
+app.use((err, req, res, next) => {
+  console.error('GLOBAL ERROR:', err);
+  console.error('Error stack:', err.stack);
+  console.error('Request path:', req.path);
+  console.error('Request method:', req.method);
+  res.status(500).json({ message: 'Internal Server Error' });
+});
 
 // Socket.io setup - optional
 let io;
