@@ -188,6 +188,12 @@ const startServer = async () => {
   if (hasDbConfig) {
     try {
       console.log('🔥 DB AUTH START');
+      console.log('Database config check:', {
+        DB_HOST: !!process.env.DB_HOST,
+        DB_NAME: !!process.env.DB_NAME,
+        DB_USER: !!process.env.DB_USER,
+        hasPassword: !!process.env.DB_PASSWORD
+      });
       await sequelize.authenticate();
       console.log('🔥 DB AUTH OK');
 
@@ -207,12 +213,24 @@ const startServer = async () => {
         console.warn('Could not verify tables:', queryError.message);
       }
     } catch (err) {
-      console.error('⚠ Database connection failed:', err.message);
-      console.error('Server will continue without database functionality.');
+      console.error('⚠️ Database connection failed, running in degraded mode');
+      console.error('Database error:', err.message);
+      console.error('Database config status:', {
+        DB_HOST: !!process.env.DB_HOST,
+        DB_NAME: !!process.env.DB_NAME,
+        DB_USER: !!process.env.DB_USER,
+        hasPassword: !!process.env.DB_PASSWORD
+      });
       // Do NOT exit - server continues without database
     }
   } else {
-    console.log('⚠ Database disabled – missing environment variables');
+    console.log('⚠️ Database disabled – missing environment variables');
+    console.log('Database config status:', {
+      DB_HOST: !!process.env.DB_HOST,
+      DB_NAME: !!process.env.DB_NAME,
+      DB_USER: !!process.env.DB_USER,
+      hasPassword: !!process.env.DB_PASSWORD
+    });
     console.log('Server running without database functionality.');
   }
 

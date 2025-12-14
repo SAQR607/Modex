@@ -56,36 +56,31 @@ const register = async (req, res) => {
     console.log('🔍 REGISTER: Creating user in database...');
     const user = await User.create({
       email,
-      password, // Will be hashed by model hook
+      password, // Will be hashed by model hook using bcrypt
       fullName,
       role: userRole
     });
     console.log('✅ REGISTER: User created successfully:', { id: user.id, email: user.email, role: user.role });
 
-    // Verify password was hashed
+    // Verify password was hashed (should NOT match plain text)
     if (user.password === password) {
       console.error('❌ REGISTER: Password was NOT hashed!');
+      return res.status(500).json({ error: 'Password hashing failed' });
     } else {
-      console.log('✅ REGISTER: Password hashed successfully');
+      console.log('✅ REGISTER: Password hashed successfully with bcrypt');
     }
 
-    // Get JWT secret with fallback for development
-    const jwtSecret = process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-secret-key-change-in-production' : null);
-    
-    if (!jwtSecret) {
+    // JWT_SECRET is REQUIRED - no fallback in production
+    if (!process.env.JWT_SECRET) {
       console.error('❌ REGISTER: JWT_SECRET is not set in environment variables');
-      if (process.env.NODE_ENV !== 'development') {
-        return res.status(500).json({ error: 'Server configuration error' });
-      }
-      console.warn('⚠️ REGISTER: Using development fallback JWT_SECRET');
-    } else {
-      console.log('✅ REGISTER: JWT_SECRET found');
+      return res.status(500).json({ error: 'Server configuration error: JWT_SECRET is required' });
     }
 
+    console.log('✅ REGISTER: JWT_SECRET found');
     console.log('🔍 REGISTER: Generating JWT token...');
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      jwtSecret,
+      process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
     console.log('✅ REGISTER: JWT token generated successfully');
@@ -139,8 +134,9 @@ const login = async (req, res) => {
       hasPasswordHash: !!user.password
     });
 
-    // Password comparison
-    console.log('🔍 LOGIN: Comparing password...');
+    // Password comparison using bcrypt.compare() via user.comparePassword()
+    // This NEVER compares plain text - always uses bcrypt.compare()
+    console.log('🔍 LOGIN: Comparing password using bcrypt.compare()...');
     const isPasswordValid = await user.comparePassword(password);
     console.log('🔍 LOGIN: Password comparison result:', isPasswordValid);
 
@@ -157,23 +153,17 @@ const login = async (req, res) => {
       console.log('ℹ️ LOGIN: Regular user - role:', user.role, 'isQualified:', user.isQualified);
     }
 
-    // Get JWT secret with fallback for development
-    const jwtSecret = process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'dev-secret-key-change-in-production' : null);
-    
-    if (!jwtSecret) {
+    // JWT_SECRET is REQUIRED - no fallback in production
+    if (!process.env.JWT_SECRET) {
       console.error('❌ LOGIN: JWT_SECRET is not set in environment variables');
-      if (process.env.NODE_ENV !== 'development') {
-        return res.status(500).json({ error: 'Server configuration error' });
-      }
-      console.warn('⚠️ LOGIN: Using development fallback JWT_SECRET');
-    } else {
-      console.log('✅ LOGIN: JWT_SECRET found');
+      return res.status(500).json({ error: 'Server configuration error: JWT_SECRET is required' });
     }
 
+    console.log('✅ LOGIN: JWT_SECRET found');
     console.log('🔍 LOGIN: Generating JWT token...');
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      jwtSecret,
+      process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
     console.log('✅ LOGIN: JWT token generated successfully');
