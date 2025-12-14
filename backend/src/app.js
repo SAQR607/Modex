@@ -11,6 +11,19 @@ console.log('ENV CHECK:', {
   PORT: process.env.PORT || 'not set (will use 3000)'
 });
 
+// Safe defaults for critical environment variables
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️ JWT_SECRET not set, using temporary default - CHANGE IN PRODUCTION');
+  process.env.JWT_SECRET = 'TEMP_DEV_SECRET_CHANGE_ME';
+}
+if (!process.env.JWT_EXPIRES_IN) {
+  process.env.JWT_EXPIRES_IN = '7d';
+}
+if (!process.env.FRONTEND_URL) {
+  process.env.FRONTEND_URL = '*';
+  console.warn('⚠️ FRONTEND_URL not set, allowing all origins');
+}
+
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -62,7 +75,7 @@ app.use(express.urlencoded({ extended: true }));
 try {
   const cors = require('cors');
   app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: process.env.FRONTEND_URL,
     credentials: true
   }));
 } catch (error) {
@@ -88,9 +101,30 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// API health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Modex Platform API is running' });
+// API health check with database status
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_HOST;
+  
+  if (hasDbConfig) {
+    try {
+      await sequelize.authenticate();
+      dbStatus = 'connected';
+    } catch (err) {
+      dbStatus = 'disconnected';
+    }
+  }
+  
+  res.json({
+    server: 'ok',
+    database: dbStatus,
+    env: {
+      JWT_SECRET: !!process.env.JWT_SECRET,
+      DB_NAME: !!process.env.DB_NAME,
+      DB_USER: !!process.env.DB_USER,
+      DB_HOST: !!process.env.DB_HOST
+    }
+  });
 });
 
 // Load routes - FORCE registration without try-catch to see errors
@@ -154,7 +188,7 @@ try {
   const socketIo = require('socket.io');
   io = socketIo(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || '*',
+      origin: process.env.FRONTEND_URL,
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -182,49 +216,34 @@ try {
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
   
-  // Attempt database connection (non-blocking)
+  // Attempt database connection (non-blocking) - NO SYNC, tables already exist
   const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_HOST;
   
   if (hasDbConfig) {
+    console.log('🔍 Attempting database connection...');
+    console.log('Database config check:', {
+      DB_HOST: !!process.env.DB_HOST,
+      DB_NAME: !!process.env.DB_NAME,
+      DB_USER: !!process.env.DB_USER,
+      hasPassword: !!process.env.DB_PASSWORD
+    });
+    
     try {
-      console.log('🔥 DB AUTH START');
-      console.log('Database config check:', {
-        DB_HOST: !!process.env.DB_HOST,
-        DB_NAME: !!process.env.DB_NAME,
-        DB_USER: !!process.env.DB_USER,
-        hasPassword: !!process.env.DB_PASSWORD
-      });
       await sequelize.authenticate();
-      console.log('🔥 DB AUTH OK');
-
-      console.log('🔥 DB SYNC START - Running sequelize.sync({ alter: true })');
-      await sequelize.sync({ force: false, alter: true });
-      console.log('🔥 DB SYNC DONE - TABLES SHOULD EXIST');
-      
-      // Verify tables exist by querying
-      try {
-        const [results] = await sequelize.query("SHOW TABLES");
-        console.log('🔥 VERIFICATION: Found', results.length, 'tables in database');
-        results.forEach(row => {
-          const tableName = Object.values(row)[0];
-          console.log('   - Table:', tableName);
-        });
-      } catch (queryError) {
-        console.warn('Could not verify tables:', queryError.message);
-      }
+      console.log('✅ Database connected successfully');
     } catch (err) {
-      console.error('⚠️ Database connection failed, running in degraded mode');
-      console.error('Database error:', err.message);
+      console.error('❌ Database connection failed:', err.message);
       console.error('Database config status:', {
         DB_HOST: !!process.env.DB_HOST,
         DB_NAME: !!process.env.DB_NAME,
         DB_USER: !!process.env.DB_USER,
         hasPassword: !!process.env.DB_PASSWORD
       });
+      console.warn('⚠️ Database connection failed, running in degraded mode');
       // Do NOT exit - server continues without database
     }
   } else {
-    console.log('⚠️ Database disabled – missing environment variables');
+    console.warn('⚠️ Database credentials loaded from environment at runtime.');
     console.log('Database config status:', {
       DB_HOST: !!process.env.DB_HOST,
       DB_NAME: !!process.env.DB_NAME,

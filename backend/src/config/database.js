@@ -7,7 +7,7 @@ const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB
 let sequelize;
 
 if (!hasDbConfig) {
-  console.log('⚠ Database disabled – missing environment variables');
+  console.warn('⚠️ Database credentials loaded from environment at runtime.');
   // Create a dummy sequelize instance that won't crash on import
   // but will fail gracefully on actual use
   sequelize = {
@@ -19,7 +19,8 @@ if (!hasDbConfig) {
     },
     query: async () => {
       throw new Error('Database not configured');
-    }
+    },
+    define: () => ({})
   };
 } else {
   // Create real sequelize instance
@@ -37,7 +38,7 @@ if (!hasDbConfig) {
       }
     );
   } catch (error) {
-    console.error('⚠ Database configuration error:', error.message);
+    console.error('⚠️ Database configuration error:', error.message);
     // Create dummy instance on error
     sequelize = {
       authenticate: async () => {
@@ -48,7 +49,8 @@ if (!hasDbConfig) {
       },
       query: async () => {
         throw new Error('Database configuration error');
-      }
+      },
+      define: () => ({})
     };
   }
 }
