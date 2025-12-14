@@ -2,6 +2,7 @@ const { Competition, Stage, QualificationQuestion, Team, User } = require('../mo
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const catchAsync = require('../utils/catchAsync');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -31,55 +32,62 @@ const upload = multer({
   }
 });
 
-const createCompetition = async (req, res) => {
-  try {
-    const { name, description, maxQualifiedUsers } = req.body;
-    const bannerImage = req.file ? req.file.path : null;
+const createCompetition = catchAsync(async (req, res, next) => {
+  console.log('🔍 CREATE COMPETITION: Request received');
+  console.log('📋 CREATE COMPETITION: Request body:', JSON.stringify(req.body, null, 2));
+  console.log('📋 CREATE COMPETITION: File uploaded:', req.file ? req.file.filename : 'none');
+  
+  const { name, description, maxQualifiedUsers } = req.body;
+  const bannerImage = req.file ? req.file.path : null;
 
-    // Validation
-    if (!name || name.trim().length < 1) {
-      return res.status(400).json({ error: 'Competition name is required' });
-    }
-
-    if (maxQualifiedUsers && (isNaN(maxQualifiedUsers) || maxQualifiedUsers < 1)) {
-      return res.status(400).json({ error: 'Max qualified users must be a positive number' });
-    }
-
-    const competition = await Competition.create({
-      name: name.trim(),
-      description: description ? description.trim() : null,
-      bannerImage,
-      maxQualifiedUsers: maxQualifiedUsers || 100,
-      status: 'draft'
-    });
-
-    res.status(201).json({ competition });
-  } catch (error) {
-    console.error('Create competition error:', error);
-    res.status(500).json({ error: 'Failed to create competition' });
+  // Validation
+  if (!name || name.trim().length < 1) {
+    return res.status(400).json({ error: 'Competition name is required' });
   }
-};
 
-const getCompetitions = async (req, res) => {
-  try {
-    console.log('🔍 GET COMPETITIONS: Starting fetch...');
-    
-    // Fetch competitions - simplified to avoid association errors
-    const competitions = await Competition.findAll({
-      order: [['created_at', 'DESC']]
-    });
-
-    console.log('✅ GET COMPETITIONS: Fetched from database:', competitions.length, 'competitions');
-    console.log('📋 GET COMPETITIONS: Competition data:', JSON.stringify(competitions, null, 2));
-
-    res.json({ competitions });
-  } catch (error) {
-    console.error('❌ GET COMPETITIONS ERROR:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ error: 'Failed to fetch competitions', details: error.message });
+  if (maxQualifiedUsers && (isNaN(maxQualifiedUsers) || maxQualifiedUsers < 1)) {
+    return res.status(400).json({ error: 'Max qualified users must be a positive number' });
   }
-};
+
+  console.log('🔍 CREATE COMPETITION: Attempting to create competition in database...');
+  console.log('📋 CREATE COMPETITION: Data to insert:', {
+    name: name.trim(),
+    description: description ? description.trim() : null,
+    bannerImage,
+    maxQualifiedUsers: maxQualifiedUsers || 100,
+    status: 'draft'
+  });
+
+  const competition = await Competition.create({
+    name: name.trim(),
+    description: description ? description.trim() : null,
+    bannerImage,
+    maxQualifiedUsers: maxQualifiedUsers || 100,
+    status: 'draft'
+  });
+
+  console.log('✅ CREATE COMPETITION: Competition created successfully:', {
+    id: competition.id,
+    name: competition.name,
+    status: competition.status
+  });
+
+  res.status(201).json({ competition });
+});
+
+const getCompetitions = catchAsync(async (req, res, next) => {
+  console.log('🔍 GET COMPETITIONS: Starting fetch...');
+  
+  // Fetch competitions - simplified to avoid association errors
+  const competitions = await Competition.findAll({
+    order: [['created_at', 'DESC']]
+  });
+
+  console.log('✅ GET COMPETITIONS: Fetched from database:', competitions.length, 'competitions');
+  console.log('📋 GET COMPETITIONS: Competition data:', JSON.stringify(competitions, null, 2));
+
+  res.json({ competitions });
+});
 
 const getCompetition = async (req, res) => {
   try {

@@ -177,13 +177,73 @@ try {
   });
 }
 
-// Global error handling middleware - MUST be after all routes
+// ============================================
+// Multer Error Handler (for file upload errors)
+// ============================================
 app.use((err, req, res, next) => {
-  console.error('GLOBAL ERROR:', err);
-  console.error('Error stack:', err.stack);
-  console.error('Request path:', req.path);
-  console.error('Request method:', req.method);
-  res.status(500).json({ message: 'Internal Server Error' });
+  // Handle multer-specific errors
+  if (err instanceof require('multer').MulterError) {
+    console.error('===========================================');
+    console.error('MULTER UPLOAD ERROR');
+    console.error('===========================================');
+    console.error('Error Code:', err.code);
+    console.error('Error Field:', err.field);
+    console.error('Error Message:', err.message);
+    console.error('===========================================');
+    
+    return res.status(400).json({
+      status: 'error',
+      message: `File upload error: ${err.message}`,
+      code: err.code
+    });
+  }
+  
+  // Pass to global error handler
+  next(err);
+});
+
+// ============================================
+// Global Error Handling Middleware
+// THIS MUST BE THE LAST MIDDLEWARE - after all routes
+// ============================================
+app.use((err, req, res, next) => {
+  // Set default error status code and status
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || 'error';
+
+  // Log the complete error with full details
+  console.error('===========================================');
+  console.error('UNHANDLED ERROR DETECTED');
+  console.error('===========================================');
+  console.error('Timestamp:', new Date().toISOString());
+  console.error('Request Method:', req.method);
+  console.error('Request URL:', req.originalUrl || req.url);
+  console.error('Request Path:', req.path);
+  console.error('Request Body:', JSON.stringify(req.body, null, 2));
+  console.error('Request Query:', JSON.stringify(req.query, null, 2));
+  console.error('Request Params:', JSON.stringify(req.params, null, 2));
+  console.error('Error Status Code:', err.statusCode);
+  console.error('Error Status:', err.status);
+  console.error('Error Message:', err.message);
+  console.error('Error Name:', err.name);
+  console.error('Error Stack Trace:');
+  console.error(err.stack);
+  console.error('Full Error Object:');
+  console.error(JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+  console.error('===========================================');
+
+  // Send error response to client
+  // In production, don't expose stack traces to clients
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  
+  res.status(err.statusCode).json({
+    status: err.status,
+    message: err.message || 'An internal server error occurred. Please check the server logs.',
+    ...(isDevelopment && {
+      stack: err.stack,
+      error: err
+    })
+  });
 });
 
 // Socket.io setup - optional
