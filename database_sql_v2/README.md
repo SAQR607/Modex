@@ -9,6 +9,7 @@ The frontend sends `firstName` and `lastName` during registration, but the datab
 ## Files
 
 - `users.sql` - SQL script to recreate the users table with `first_name` and `last_name` columns
+- `competitions.sql` - SQL script to recreate the competitions table with correct field names (`name`, `max_qualified_users`, `banner_image`)
 
 ## Step-by-Step Instructions
 
