@@ -62,19 +62,22 @@ const createCompetition = async (req, res) => {
 
 const getCompetitions = async (req, res) => {
   try {
+    console.log('🔍 GET COMPETITIONS: Starting fetch...');
+    
+    // Fetch competitions - simplified to avoid association errors
     const competitions = await Competition.findAll({
-      include: [
-        { association: 'stages' },
-        { association: 'teams' },
-        { association: 'qualificationQuestions' }
-      ],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
+
+    console.log('✅ GET COMPETITIONS: Fetched from database:', competitions.length, 'competitions');
+    console.log('📋 GET COMPETITIONS: Competition data:', JSON.stringify(competitions, null, 2));
 
     res.json({ competitions });
   } catch (error) {
-    console.error('Get competitions error:', error);
-    res.status(500).json({ error: 'Failed to fetch competitions' });
+    console.error('❌ GET COMPETITIONS ERROR:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to fetch competitions', details: error.message });
   }
 };
 

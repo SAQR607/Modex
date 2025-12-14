@@ -13,10 +13,25 @@ const Competitions = () => {
 
   const fetchCompetitions = async () => {
     try {
+      console.log('🔍 FRONTEND: Fetching competitions from /api/competitions');
       const response = await api.get('/api/competitions');
-      setCompetitions(response.data.competitions);
+      console.log('✅ FRONTEND: Response received:', response);
+      console.log('📋 FRONTEND: Response data:', response.data);
+      console.log('📋 FRONTEND: Competitions array:', response.data.competitions);
+      console.log('📊 FRONTEND: Number of competitions:', response.data.competitions?.length || 0);
+      
+      if (response.data && response.data.competitions) {
+        setCompetitions(response.data.competitions);
+        console.log('✅ FRONTEND: Competitions state updated with', response.data.competitions.length, 'items');
+      } else {
+        console.warn('⚠️ FRONTEND: Response structure unexpected:', response.data);
+        setCompetitions([]);
+      }
     } catch (error) {
-      console.error('Failed to fetch competitions:', error);
+      console.error('❌ FRONTEND: Failed to fetch competitions:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      setCompetitions([]);
     } finally {
       setLoading(false);
     }
