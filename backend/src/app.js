@@ -2,14 +2,10 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 
-console.log('Booting server...');
+console.log('APP.JS STARTING');
 
 // Load environment variables (optional - won't crash if .env doesn't exist)
-try {
-  require('dotenv').config();
-} catch (error) {
-  // .env file is optional - continue without it
-}
+require('dotenv').config();
 
 // Process-level error handlers for deployment safety
 process.on('uncaughtException', (error) => {
@@ -22,6 +18,10 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // Don't exit - allow server to continue running
 });
+
+// Import DB and models FIRST - ensure models loaded and relationships defined
+const sequelize = require('./config/database');
+require('./models/index'); // This loads all models and defines relationships
 
 // Initialize Express app
 const app = express();
@@ -167,56 +167,42 @@ try {
   io = null;
 }
 
-// Import models to ensure they are registered
-const models = require('./models');
-
-// Database initialization - completely optional, non-blocking
-const initializeDatabase = async () => {
+// Start server with database sync
+const startServer = async () => {
+  const PORT = process.env.PORT || 3000;
+  
   // Check if database credentials are provided
   const hasDbConfig = process.env.DB_NAME && process.env.DB_USER && process.env.DB_PASSWORD && process.env.DB_HOST;
   
-  if (!hasDbConfig) {
+  if (hasDbConfig) {
+    try {
+      console.log('APP.JS: attempting DB authenticate...');
+      await sequelize.authenticate();
+      console.log('✅ Database connected');
+
+      console.log('APP.JS: running sequelize.sync({ alter: true }) ...');
+      await sequelize.sync({ alter: true });
+      console.log('✅ Database synced (tables created/updated)');
+    } catch (err) {
+      console.error('❌ Startup error:', err.message);
+      console.error('Stack:', err.stack);
+      // Do not exit - log error for hostinger; keep process alive for debugging
+    }
+  } else {
     console.log('Database: skipped (no configuration)');
-    return;
   }
 
+  // Start server even if database failed
   try {
-    const { sequelize } = models;
-    await sequelize.authenticate();
-    console.log('Database: connected');
-    
-    try {
-      console.log('Synchronizing database schema...');
-      await sequelize.sync({ alter: true });
-      console.log('✓ Database tables created/updated successfully');
-      
-      const seedAdmin = require('./seeders/adminSeeder');
-      await seedAdmin();
-    } catch (error) {
-      console.error('Database sync/seeding failed:', error.message);
-      console.error('Stack:', error.stack);
-    }
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
   } catch (error) {
-    console.log('Database: skipped (connection failed)');
-    console.error('Error:', error.message);
+    console.error('FATAL: Server failed to start:', error.message);
+    process.exit(1);
   }
 };
 
-// Start server - CRITICAL: This MUST succeed
-const PORT = process.env.PORT || 3000;
-
-try {
-  server.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
-    
-    // Initialize database asynchronously (non-blocking)
-    initializeDatabase().catch(() => {
-      // Already logged in initializeDatabase
-    });
-  });
-} catch (error) {
-  console.error('FATAL: Server failed to start:', error.message);
-  process.exit(1);
-}
+startServer();
 
 module.exports = { app, server, io };
