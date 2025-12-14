@@ -43,3 +43,4 @@ const UploadedFile = sequelize.define('UploadedFile', {
 
 module.exports = UploadedFile;
 
+
