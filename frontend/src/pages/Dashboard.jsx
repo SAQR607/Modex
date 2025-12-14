@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   return (
     <div className="dashboard-page">
@@ -30,12 +30,6 @@ const Dashboard = () => {
                 <span className="info-label">Role</span>
                 <span className="info-value role-badge">{user?.role}</span>
               </div>
-              <div className="info-item">
-                <span className="info-label">Qualified</span>
-                <span className={`info-value ${user?.isQualified ? 'qualified' : 'not-qualified'}`}>
-                  {user?.isQualified ? 'Yes' : 'No'}
-                </span>
-              </div>
               {user?.teamId && (
                 <div className="info-item">
                   <span className="info-label">Team ID</span>
@@ -51,7 +45,12 @@ const Dashboard = () => {
               <Link to="/competitions" className="btn btn-primary btn-large">
                 View Competitions
               </Link>
-              {user?.isQualified && (
+              {isAdmin && (
+                <Link to="/create-competition" className="btn btn-primary btn-large">
+                  Create New Competition
+                </Link>
+              )}
+              {user?.teamId && (
                 <Link to="/team" className="btn btn-secondary btn-large">
                   Manage Team
                 </Link>

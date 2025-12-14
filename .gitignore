@@ -16,6 +16,7 @@ yarn.lock
 # Build outputs
 frontend/dist/
 frontend/build/
+frontend/node_modules/
 backend/dist/
 
 # Uploads (keep directory structure)

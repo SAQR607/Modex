@@ -12,6 +12,7 @@ import Team from './pages/Team';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import JudgeDashboard from './pages/JudgeDashboard';
+import CreateCompetition from './pages/CreateCompetition';
 import Loading from './components/Loading';
 
 const PrivateRoute = ({ children, requireRole }) => {
@@ -64,6 +65,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-competition"
+            element={
+              <PrivateRoute requireRole="admin">
+                <CreateCompetition />
               </PrivateRoute>
             }
           />
